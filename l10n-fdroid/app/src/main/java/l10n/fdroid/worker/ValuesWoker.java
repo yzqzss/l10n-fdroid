@@ -1,7 +1,11 @@
 package l10n.fdroid.worker;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 
 import l10n.fdroid.schema.FDroidPackage;
 import l10n.fdroid.schema.Values;
@@ -78,6 +82,19 @@ public class ValuesWoker {
                 db.apps_col.updateOne(new Document("_id", processing_doc.get("_id")), status_FAIL);
             } finally {
                 apkFile.delete();
+                mainDirectory.delete();
+                // delete mainDirectory
+                Path pathToBeDeleted = mainDirectory.toPath();
+
+                try {
+                    Files.walk(pathToBeDeleted)
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    // e.printStackTrace();
+                }
                 mainDirectory.delete();
             }
 
