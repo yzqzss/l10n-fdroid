@@ -68,8 +68,6 @@ public class ValuesWoker {
                 }
                 if (string_docs_to_insert.size() == 0) {
                     logger.warning("No strings to insert");
-                    db.apps_col.updateOne(new Document("_id", processing_doc.get("_id")), status_DONE);
-                    continue;
                 } else {
                     db.values_col.insertMany(string_docs_to_insert);
                 }
