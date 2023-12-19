@@ -15,7 +15,6 @@ import org.bson.Document;
 import java.util.logging.Logger;
 
 public class PickerWoker extends Thread {
-    static Boolean MULTI_THREAD = true;
     static Logger logger = Logger.getLogger(PickerWoker.class.getName());
 
     static DB db;
@@ -54,18 +53,26 @@ public class PickerWoker extends Thread {
             docs_to_insert.add(fdroidPackage.toDocument());
         }
     }
+
+    /*
+    * args[0]: number of threads
+    */
     public static void main(String[] args) throws FileNotFoundException {
+        if (args.length == 0 || args[0].equals("--help")) {
+            System.out.println("Usage: num_threads [0 for single thread mod] (100 is recommended)");
+            return;
+        }
+        Integer num_threads = 100;
+        num_threads = Integer.parseInt(args[0]);
         db = new DB();
 
-        // clear db
-        // logger.info("Clearing db");
-        // db.apps_col.deleteMany(new Document());
-
-        if (!MULTI_THREAD) {
+        if (num_threads == 0) {
             logger.info("Single thread");
             main_sync(args);
             return;
         }
+        if (num_threads < 1) { num_threads = 1; }
+
         logger.info("Multi thread");
 
         File indexFile = RepoIndex.initFDroidIndex();
@@ -74,7 +81,8 @@ public class PickerWoker extends Thread {
 
         // start threads
         ArrayList<PickerWoker> workers = new ArrayList<PickerWoker>();
-        for (int i = 0; i < 100; i++) {
+
+        for (int i = 0; i < num_threads; i++) {
             PickerWoker worker = new PickerWoker();
             logger.info("Starting " + worker);
             workers.add(worker);
