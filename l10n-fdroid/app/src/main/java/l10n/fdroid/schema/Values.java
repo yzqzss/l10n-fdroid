@@ -73,11 +73,34 @@ public class Values {
         XmlPullParser parser = XmlPullParserFactory.newInstance().newPullParser();
         parser.setInput(inputStream, "UTF-8");
         int eventType = parser.getEventType();
+
+
         while (eventType != XmlPullParser.END_DOCUMENT) {
             if (eventType == XmlPullParser.START_TAG && parser.getName().equals("string")) {
                 String name = parser.getAttributeValue(null, "name");
-                String value = parser.nextText();
-                putString(name, value);
+                try {
+                    // use valueBuilder to handle nested tags
+                    // e.g. <string name="foo">abc<b>bar</b>edf</string>
+                    StringBuilder valueBuilder = new StringBuilder();
+                    while (!(eventType == XmlPullParser.END_TAG && parser.getName().equals("string"))) {
+                        if (eventType == XmlPullParser.TEXT) {
+                            valueBuilder.append(parser.getText());
+                        } else if (eventType == XmlPullParser.START_TAG) {
+                            valueBuilder.append("<").append(parser.getName()).append(">");
+                        } else if (eventType == XmlPullParser.END_TAG) {
+                            valueBuilder.append("</").append(parser.getName()).append(">");
+                        }
+                        eventType = parser.next();
+                    }
+                    String value = valueBuilder.toString();
+
+                    putString(name, value);
+                    logger.log(Level.FINE, "loadStrings: " + name + " = " + value);
+                } catch (XmlPullParserException e) {
+                    logger.log(Level.WARNING, "loadStrings: " + stringXmlFile.getAbsolutePath() + " " + name + " " + e.getMessage());
+                    eventType = parser.next();
+                    continue;
+                }
             }
             eventType = parser.next();
         }
@@ -86,7 +109,7 @@ public class Values {
     }
 
     public static void main(String[] args) {
-        File valuesDir = new File("/home/yzqzss/git/l10n-fdroid/l10n-fdroid/app/src/test/resources/values");
+        File valuesDir = new File("l10n-fdroid/app/tmp/apk_resources/resources/package_1/res/values-es");
         File stringXml = new File(valuesDir, "strings.xml");
         Values values = new Values(valuesDir.getName());
         try {

@@ -38,7 +38,6 @@ public class ValuesWoker {
             String apk_url = "https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo" + fdroidPackage.fileName;
             File apkFile = new File("data/f-droid/apk/" , fdroidPackage.packageName + "-" + fdroidPackage.versionCode + ".apk");
             File mainDirectory = new File("data/f-droid/values/" + fdroidPackage.packageName + "/" + fdroidPackage.versionCode);
-            logger.info("Downloading " + apk_url + " to " + apkFile);
 
             try {
                 Downloader.download(apk_url, apkFile);
