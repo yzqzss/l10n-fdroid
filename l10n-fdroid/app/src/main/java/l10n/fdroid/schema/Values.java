@@ -81,8 +81,17 @@ public class Values {
                 try {
                     // use valueBuilder to handle nested tags
                     // e.g. <string name="foo">abc<b>bar</b>edf</string>
+                    // expected value got: abc<b>bar</b>edf
                     StringBuilder valueBuilder = new StringBuilder();
+                    boolean skipFirstStringTag = true; // Flag to skip the initial "<string>" tag
                     while (!(eventType == XmlPullParser.END_TAG && parser.getName().equals("string"))) {
+                        // skip the initial "<string>" tag
+                        if (skipFirstStringTag) {
+                            skipFirstStringTag = false;
+                            eventType = parser.next();
+                            continue;
+                        }
+                        // build value
                         if (eventType == XmlPullParser.TEXT) {
                             valueBuilder.append(parser.getText());
                         } else if (eventType == XmlPullParser.START_TAG) {
