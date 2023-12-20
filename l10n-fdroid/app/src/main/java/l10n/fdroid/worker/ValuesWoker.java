@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 
 import l10n.fdroid.schema.FDroidPackage;
 import l10n.fdroid.schema.Values;
@@ -18,21 +19,46 @@ import org.bson.Document;
 import java.util.logging.Logger;
 
 public class ValuesWoker {
+    // query docs:
+    static Document status_not_EXISTS = new Document("status", new Document("$exists", false));
+    static Document status_DONE = new Document("status", "DONE");
+    static Document status_FAIL = new Document("status", "FAIL");
+    static Document status_PROCESSING = new Document("status", "PROCESSING");
+
+    // update docs:
+    static Document status_$DONE = new Document("$set", new Document("status", "DONE"));
+    static Document status_$FAIL = new Document("$set", new Document("status", "FAIL"));
+    static Document status_$PROCESSING = new Document("$set", new Document("status", "PROCESSING"));
+
     static Logger logger = Logger.getLogger(ValuesWoker.class.getName());
     public static void main(String[] args) {
+        HashMap<String, Document> claimable_statuses = new HashMap<String, Document>();
+        claimable_statuses.put("NOT_EXISTS", status_not_EXISTS);
+        claimable_statuses.put("FAIL", status_FAIL);
+        claimable_statuses.put("PROCESSING", status_PROCESSING);
+        // claimable_statuses.put("DONE", status_DONE);
+
+        if (args.length == 0 || args[0] == "--help") {
+            System.out.println("Usage: [task_status_to_claim]");
+            System.out.println("task_status_to_claim: " + claimable_statuses.keySet());
+            System.exit(0);
+        }
+        if (!claimable_statuses.containsKey(args[0])) {
+            System.out.println("task_status_to_claim: " + claimable_statuses.keySet());
+            System.exit(1);
+        }
+
+        // task to claim:
+        Document doc_to_claim = claimable_statuses.get(args[0]);
+
         DB db = new DB();
 
-        // findOneAndUpdate {status: {$exists: false}} -> {status: "processing"}
-        Document status_$EMPTY = new Document("status", new Document("$exists", false));
-        Document status_DONE = new Document("$set", new Document("status", "DONE"));
-        Document status_FAIL = new Document("$set", new Document("status", "FAIL"));
-        Document status_PROCESSING = new Document("$set", new Document("status", "PROCESSING"));
         
-        Document processing_doc = db.apps_col.findOneAndUpdate(status_$EMPTY, status_PROCESSING);
-        while (processing_doc != null && !new File("stop").exists()) {
-            logger.info("Processing " + processing_doc.getString("packageName"));
+        Document inprocessing_doc = db.apps_col.findOneAndUpdate(doc_to_claim, status_$PROCESSING);
+        while (inprocessing_doc != null && !new File("stop").exists()) {
+            logger.info("Processing " + inprocessing_doc.getString("packageName"));
 
-            FDroidPackage fdroidPackage = new FDroidPackage(processing_doc);
+            FDroidPackage fdroidPackage = new FDroidPackage(inprocessing_doc);
             
             // download apk
             String apk_url = "https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo" + fdroidPackage.fileName;
@@ -74,11 +100,11 @@ public class ValuesWoker {
                 } else {
                     db.values_col.insertMany(string_docs_to_insert);
                 }
-                db.apps_col.updateOne(new Document("_id", processing_doc.get("_id")), status_DONE);
+                db.apps_col.updateOne(new Document("_id", inprocessing_doc.get("_id")), status_$DONE);
             } catch (Exception e) {
                 e.printStackTrace();
                 logger.warning("Failed to process " + fdroidPackage.fileName);
-                db.apps_col.updateOne(new Document("_id", processing_doc.get("_id")), status_FAIL);
+                db.apps_col.updateOne(new Document("_id", inprocessing_doc.get("_id")), status_$FAIL);
             } finally {
                 apkFile.delete();
                 mainDirectory.delete();
@@ -97,7 +123,7 @@ public class ValuesWoker {
                 mainDirectory.delete();
             }
 
-            processing_doc = db.apps_col.findOneAndUpdate(status_$EMPTY, status_PROCESSING); // -> {status: "PROCESSING"}
+            inprocessing_doc = db.apps_col.findOneAndUpdate(doc_to_claim, status_$PROCESSING); // -> {status: "PROCESSING"}
         }
         logger.info("Done");
     }
