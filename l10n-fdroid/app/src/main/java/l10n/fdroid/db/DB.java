@@ -13,6 +13,7 @@ public class DB {
     MongoDatabase database;
     public MongoCollection<Document> apps_col;
     public MongoCollection<Document> values_col;
+    public boolean connected = false;
 
     static Logger logger = Logger.getLogger(DB.class.getName());
     public DB() {
@@ -31,6 +32,7 @@ public class DB {
 
         logger.info(apps_col.countDocuments() + " documents in the collection");
         logger.info("Connected to MongoDB :) ");
+        this.connected = true;
     }
     public void close() {
         logger.info("Closing MongoDB connection");

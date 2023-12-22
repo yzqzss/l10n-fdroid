@@ -21,6 +21,7 @@ import java.util.logging.Logger;
 public class ValuesWoker {
     // query docs:
     static Document status_not_EXISTS = new Document("status", new Document("$exists", false));
+    static Document status_TODO = new Document("status", "TODO");
     static Document status_DONE = new Document("status", "DONE");
     static Document status_FAIL = new Document("status", "FAIL");
     static Document status_PROCESSING = new Document("status", "PROCESSING");
@@ -34,12 +35,13 @@ public class ValuesWoker {
     public static void main(String[] args) {
         HashMap<String, Document> claimable_statuses = new HashMap<String, Document>();
         claimable_statuses.put("NOT_EXISTS", status_not_EXISTS);
+        claimable_statuses.put("TODO", status_TODO);
         claimable_statuses.put("FAIL", status_FAIL);
         claimable_statuses.put("PROCESSING", status_PROCESSING);
         // claimable_statuses.put("DONE", status_DONE);
 
         if (args.length == 0 || args[0] == "--help") {
-            System.out.println("Usage: [task_status_to_claim]");
+            System.out.println("Usage: task_status_to_claim");
             System.out.println("task_status_to_claim: " + claimable_statuses.keySet());
             System.exit(0);
         }
@@ -117,8 +119,8 @@ public class ValuesWoker {
                         .map(Path::toFile)
                         .forEach(File::delete);
                 } catch (IOException e) {
-                    // TODO Auto-generated catch block
                     // e.printStackTrace();
+                    // do noting here
                 }
                 mainDirectory.delete();
             }
